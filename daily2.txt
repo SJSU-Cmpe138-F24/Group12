@@ -1,0 +1,20 @@
+SELECT
+  -- Convert temperature to Fahrenheit (C * 9/5 + 32)
+  (`forecast`[SAFE_OFFSET(0)].temperature_2m_above_ground * 9 / 5) + 32 AS temperature_fahrenheit,
+  
+  -- Retrieve specific humidity (no conversion needed)
+  `forecast`[SAFE_OFFSET(0)].specific_humidity_2m_above_ground,
+
+  -- Calculate wind speed from u and v components (sqrt(u^2 + v^2))
+  SQRT(
+    POW(`forecast`[SAFE_OFFSET(0)].u_component_of_wind_10m_above_ground, 2) +
+    POW(`forecast`[SAFE_OFFSET(0)].v_component_of_wind_10m_above_ground, 2)
+  ) AS wind_speed
+  
+FROM
+  `bigquery-public-data.noaa_global_forecast_system.NOAA_GFS0P25`
+WHERE
+  creation_time BETWEEN DATETIME("2024-12-02")
+  AND DATETIME_ADD("2024-12-02", INTERVAL 1 DAY)
+LIMIT
+  100
