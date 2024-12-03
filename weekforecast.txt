@@ -1,0 +1,33 @@
+WITH daily_forecast AS (
+  SELECT 
+    DATE(forecast.time) AS forecast_date,
+    creation_time,
+    forecast.time AS forecast_time,
+    forecast.temperature_2m_above_ground AS temperature_celsius,
+    forecast.relative_humidity_2m_above_ground AS relative_humidity,
+    forecast.total_precipitation_surface AS precipitation_mm,
+    ABS(TIMESTAMP_DIFF(forecast.time, TIMESTAMP(DATE(forecast.time), "12:00:00"), SECOND)) AS time_diff
+  FROM 
+    `bigquery-public-data.noaa_global_forecast_system.NOAA_GFS0P25`, 
+    UNNEST(forecast) AS forecast
+  WHERE 
+    _PARTITIONTIME BETWEEN CURRENT_DATE() AND DATE_ADD(CURRENT_DATE(), INTERVAL 7 DAY) -- Next week's partitions
+    AND forecast.time BETWEEN CURRENT_TIMESTAMP() AND TIMESTAMP_ADD(CURRENT_TIMESTAMP(), INTERVAL 7 DAY) -- Next 7 days
+)
+SELECT 
+  forecast_date,
+  creation_time,
+  forecast_time,
+  temperature_celsius,
+  relative_humidity,
+  precipitation_mm
+FROM 
+  daily_forecast
+WHERE 
+  time_diff = (
+    SELECT MIN(time_diff)
+    FROM daily_forecast d
+    WHERE d.forecast_date = daily_forecast.forecast_date
+  )
+ORDER BY 
+  forecast_date ASC;

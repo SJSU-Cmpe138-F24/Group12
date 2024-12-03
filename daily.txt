@@ -1,0 +1,12 @@
+SELECT
+  forecast.temperature_2m_above_ground * 9/5 + 32 AS temperature_fahrenheit,  -- Convert temperature from Celsius to Fahrenheit
+  forecast.relative_humidity_2m_above_ground AS humidity_percent,  -- Relative humidity
+  SQRT(POW(forecast.u_component_of_wind_10m_above_ground, 2) + POW(forecast.v_component_of_wind_10m_above_ground, 2)) AS wind_speed  -- Wind speed calculation
+FROM
+  `bigquery-public-data.noaa_global_forecast_system.NOAA_GFS0P25`,
+  UNNEST(forecast) AS forecast  -- Unnest the forecast array
+WHERE
+  creation_time BETWEEN DATETIME("2024-12-02") AND DATETIME_ADD(DATETIME("2024-12-02"), INTERVAL 1 DAY)
+ORDER BY
+  forecast.time DESC  -- Get the most recent data
+LIMIT 1;  -- Retrieve only one entry for today
